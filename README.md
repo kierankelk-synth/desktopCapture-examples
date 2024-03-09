@@ -1,0 +1,21 @@
+# Overview
+
+This repository is intended to demonstrate the behaviour of various screen capture APIs in Chromium, in order to contribute to [the discussion](https://groups.google.com/a/chromium.org/g/chromium-extensions/c/3RanHldyp9c) around improvements to `desktopCapture`.
+
+# Summary of behaviour
+
+All of the following are true as of v122.
+
+- `tabCapture.getMediaStreamId` works as expected - a `streamId` is returned which can be passed to an offscreen document, which can then retrieve and record a `stream` via the `mandatory` field on `getUserMedia`, [as documented here](https://developer.chrome.com/docs/extensions/how-to/web-platform/screen-capture). This example is included to show the desired behaviour for `desktopCapture`.
+- `desktopCapture.chooseDesktopMedia` without passing a `Tab` fails immediately with `A target tab is required when called from a service worker context.`
+- `desktopCapture.chooseDesktopMedia` with passing an existing `Tab` correctly shows the prompt and returns a `streamId`. However, the stream is then tied to the `Tab` passed, and offscreen documents are not tabs, so there's no way to access that stream in the way we want to. This example shows attempting to pass and use the resultant `streamId` in the offscreen document, in the same way as we do for `tabCapture`, which fails with `DOMException: Invalid state`.
+- The obvious workaround is to use the web standard [`getDisplayMedia`](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia), but this has the limitation of not being able to narrow the allowed capture sources like `desktopCapture` supports (so the user can always select a tab or a window, even if the extension only wants to present screens). More importantly, calling this API from an offscreen document has several undesirable behaviours. In roughly decreasing severity:
+  - The source picker doesn't lock focus for the current tab, the way `desktopCapture` does, or `getDisplayMedia` would if called from within that tab. This means the user can click away from the picker and continue interacting with the page, while the document sees an unresolved `Promise` indistinguishable from the user still actively interacting with the picker. In practice this often looks like a bug in the extension - we think the user is picking a source (perhaps updating our UI accordingly), while the picker was actually left minimized or offscreen potentially a long time ago.
+  - Relatedly, the picker isn't attached at all to the existing tab or window. Where normally dialogs are in the middle and on top of content the user is likely paying attention to, this picker spawns in the center of the monitor in its own window. Depending on the user's exact setup (e.g. large monitors) it could potentially not be obvious at all, and certainly feels like bad UX or even a bug.
+  - Any extensions which implement this workaround have two quite different code paths, and therefore are more complex than would be ideal. In the case of `tabCapture`, we get a `streamId` in the service worker which is passed via a `Port` and then retrieved with `getUserMedia` in the offscreen document; whereas with this workaround the offscreen document itself owns the dialog and directly creates a stream.
+  - On Mac (unsure about other platforms), the picker has a minor visual issue: the text `Choose what to share with ${EXTENSION_NAME}` is slightly cut off by the window title.
+- The other workaround is to create a new, real, extension-controlled tab which makes the call to `desktopCapture.chooseDesktopMedia`. This works, but is not a great solution as the tab can be interacted with by the user: they can see it, open it, and even close it while recording is in progress. This workaround also existed for `tabCapture` prior to the new behaviour and suggested solution with offscreen documents introduced in v116. I argue that `desktopCapture` should get the same treatment to avoid this obtrusive workaround.
+
+# Running the examples
+
+Each of the directories in this repository can be loaded as an unpacked extension (`://extensions` &rightarrow; developer mode: `true` &rightarrow; `Load unpacked`). The relevant APIs are then invoked by clicking the extension icon (note that in failure cases, you'll need to look in the console output).

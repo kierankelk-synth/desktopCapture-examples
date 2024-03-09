@@ -1,0 +1,13 @@
+{
+  "name": "Working tabCapture",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {},
+  "permissions": [
+    "tabCapture",
+    "offscreen"
+  ],
+  "background": {
+    "service_worker": "serviceWorker.js"
+  }
+}

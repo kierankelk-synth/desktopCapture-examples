@@ -1,0 +1,13 @@
+{
+  "name": "Workaround using desktopCapture with a new tab",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {},
+  "permissions": [
+    "desktopCapture",
+    "tabs"
+  ],
+  "background": {
+    "service_worker": "serviceWorker.js"
+  }
+}

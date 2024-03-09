@@ -1,0 +1,12 @@
+{
+  "name": "Workaround using getDisplayMedia",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {},
+  "permissions": [
+    "offscreen"
+  ],
+  "background": {
+    "service_worker": "serviceWorker.js"
+  }
+}

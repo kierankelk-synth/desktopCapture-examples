@@ -1,0 +1,13 @@
+{
+  "name": "Broken desktopCapture without tab",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {},
+  "permissions": [
+    "desktopCapture",
+    "offscreen"
+  ],
+  "background": {
+    "service_worker": "serviceWorker.js"
+  }
+}
